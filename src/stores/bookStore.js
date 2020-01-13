@@ -1,18 +1,13 @@
 import Dispatcher from '../dispatcher/appDispatcher';
 import {EventEmitter} from 'events';
+import Axios from 'axios';
 
 const CHANGE_EVENT = 'change';
 
 let _bookStore = {
-    book:{
-        bookList: [],
-        readState:{
-            pending:false,
-            success:false,
-            failure:false
-        },
-        error: ''
-    }
+    bookState: "",
+    books: [],
+    editedBook: -1
 };
 
 class BookStoreClass extends EventEmitter{
@@ -29,17 +24,20 @@ class BookStoreClass extends EventEmitter{
         this.emit(CHANGE_EVENT);
     }
 
-
-    getAllBooks(){
-        return _bookStore.book;
+    post(){
+        Axios.post("/dummyUrl", _bookStore.books);
     }
 
-    resetReadState(){
-        _bookStore.book.readState = {
-            pending:false,
-            success:false,
-            failure:false
-          }
+    getAllBooks(){
+        return _bookStore.books;
+    }
+
+    getBookState(){
+        return _bookStore.bookState;
+    }
+
+    getEditedBook(){
+        return _bookStore.editedBook;
     }
 }
 
@@ -47,25 +45,43 @@ const BookStore = new BookStoreClass();
 
 Dispatcher.register( (action) => {
 
+    let maxId = 0;
+
     switch (action.actionType){
-        case 'read_books_successful':
-            BookStore.resetReadState();
-            _bookStore.book.bookList = action.data;
-            _bookStore.book.readState.success = true;
+        case 'set book state':
+            _bookStore.bookState = action.state;
+            _bookStore.books = action.books;
             BookStore.emitChange();
             break;
-        case 'read_books_failure':
-            BookStore.resetReadState();
-            _bookStore.book.readState.failure = true;
+        case 'delete book':
+            _bookStore.books = _bookStore.books.filter(function(value){
+                return value.id != action.id;
+            });
+            BookStore.post();
             BookStore.emitChange();
             break;
-        case 'read_books_started':
-            BookStore.resetReadState();
-            _bookStore.book.readState.pending = true;
+        case 'add book':
+            _bookStore.books.forEach(book => {
+                if (book.id > maxId) maxId = book.id;    
+            });
+            _bookStore.books.push({
+                id: maxId + 1,
+                title: "No Title",
+                author: -1,
+                publisher: -1
+            });
+            BookStore.post();
             BookStore.emitChange();
             break;
-        default:
-            return;
+        case 'update book':
+            _bookStore.books.forEach(book => {
+                if (book.id == action.id) {
+                    book[action.key] = action.value;
+                }    
+            });
+            BookStore.post();
+            BookStore.emitChange();
+            break;
     }
 } );
 

@@ -7,11 +7,44 @@ import BookActions from '../actions/bookActions';
 export class BookList extends React.Component{
 
     createBookRow(book){
+
+        function deleteThisBook() {
+            BookActions.deleteBook(book.id);
+        }
+
+        function updateBookTitle(event) {
+            BookActions.updateBook(book.id, "title", event.target.value);
+        }
+
+        function updateBookAuthor(event) {
+            BookActions.updateBook(book.id, "author", parseFloat(event.target.value) || 0);
+        }
+
+        function updateBookPublisher(event) {
+            BookActions.updateBook(book.id, "publisher", parseFloat(event.target.value) || 0);
+        }
+
         return (
-            <tr key={book.book_id}>
-                <td> {book.book_id} </td>
-                <td> {book.title} </td>
-                <td> {book.author} </td>
+            <tr key={book.id}>
+                <td>
+                    <button type="button" className="btn btn-danger" onClick={deleteThisBook}>Delete Book</button>
+                </td>
+                <td> {book.id} </td>
+                <td>
+                    <div className="input-group mb-3">
+                        <input type="text" onChange={updateBookTitle} className="form-control" aria-label="Title" value={book.title}/>
+                    </div>
+                </td>
+                <td>
+                    <div className="input-group mb-3">
+                        <input type="number" onChange={updateBookAuthor} className="form-control" aria-label="Author" value={book.author}/>
+                    </div>
+                </td>
+                <td>
+                    <div className="input-group mb-3">
+                        <input type="number" onChange={updateBookPublisher} className="form-control" aria-label="Publisher" value={book.publisher}/>
+                    </div>
+                </td>
             </tr>
         );
     }
@@ -22,42 +55,46 @@ export class BookList extends React.Component{
 
     render() {
         
-        let content = '';
-        
-        if(this.props.book.readState.pending){
-            content = (
-                <div className="d-flex justify-content-center">
-                    <div className="spinner-border" role="status">
-                        <span className="sr-only">Loading...</span>
-                    </div> 
-                </div>
-            );
-        }
-        
+        let content;
 
-        if(this.props.book.readState.success){
-            content = 
-                (<table className="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Title</th>
-                            <th>Author</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {this.props.book.bookList.map(this.createBookRow, this)}
-                    </tbody>    
-                </table>)
-        }
-
-        if(this.props.book.readState.failure){
-            content = 
-            (
-                <div className="alert alert-danger" role="alert">
-                    Error while loading books!
-                </div>
-            )
+        switch (this.props.bookState) {
+            case "pending":
+                content = (
+                    <div className="d-flex justify-content-center">
+                        <div className="spinner-border" role="status">
+                            <span className="sr-only">Loading...</span>
+                        </div> 
+                    </div>
+                );
+                break;
+            case "success":
+                content = (
+                    <React.Fragment>
+                        <button type="button" className="btn btn-primary" onClick={BookActions.addBook}>Add Book</button>
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Publisher</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {this.props.books.map(this.createBookRow, this)}
+                            </tbody>    
+                        </table>
+                    </React.Fragment>
+                );
+                break;
+            default:
+                content = (
+                    <div className="alert alert-danger" role="alert">
+                        {this.props.bookState}
+                    </div>
+                );
+                break;
         }
 
         return(
@@ -70,7 +107,9 @@ export class BookList extends React.Component{
 }
 
 BookList.propTypes = {
-    book: PropTypes.object.isRequired
+    bookState: PropTypes.string.isRequired,
+    books: PropTypes.array.isRequired,
+    editedBook: PropTypes.number.isRequired
 };
 
 
